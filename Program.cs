@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -128,6 +129,9 @@ public class Program
             if ( ignoredFiles != null && ignoredFiles.Contains( item ) ) continue;
             File.Copy( item, item.Replace( path, $"{BuildRoot}/{buildId}" ), true );
         }
+
+        if ( Directory.Exists( $"{BuildRoot}/{buildId - 1}" ) )
+            Directory.Delete( $"{BuildRoot}/{buildId - 1}", true );
     }
 
     public static byte[] GetMD5Hash( byte[] data )
