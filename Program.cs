@@ -17,16 +17,14 @@ public class Program
 
     public static string MostRecentBuildRoot => $"{BuildRoot}/{MostRecentBuildId}";
 
-    public static int MostRecentBuildId = 0;
+    public static int MostRecentBuildId = -1;
 
     public static void Main( string[] args )
     {
         DetermineMostRecentBuild();
 
-        if ( BuildExists( 0 ) )
-        {
+        if ( MostRecentBuildId != -1 )
             CheckForDiffsAgainstPackagedContent( MostRecentBuildId );
-        }
         else
         {
             Directory.CreateDirectory( $"{BuildRoot}/0" );
