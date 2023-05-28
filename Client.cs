@@ -13,11 +13,31 @@ public class Client
 
     public Client()
     {
-        Tcp = new TcpClient( "192.168.1.246", 11000 );
+    connection:
+        try
+        {
+            TcpClient client = new( "127.0.0.1", 11000 );
+            string message = "Hello World!";
 
-        var stream = Tcp.GetStream();
-        stream.Write( Encoding.UTF8.GetBytes( "Hello Server!" ) );
+            int byteCount = Encoding.ASCII.GetByteCount( message + 1 );
+            byte[] sendData = new byte[ byteCount ];
+            sendData = Encoding.ASCII.GetBytes( message );
 
-        Console.ReadLine();
+            NetworkStream stream = client.GetStream();
+            stream.Write( sendData, 0, sendData.Length );
+
+            StreamReader reader = new( stream );
+            string response = reader.ReadLine();
+            Console.WriteLine( response );
+
+            stream.Close();
+            client.Close();
+            Console.ReadKey();
+        }
+        catch ( Exception ex )
+        {
+            Console.WriteLine( "Failed to connect, retrying..." );
+            goto connection;
+        }
     }
 }

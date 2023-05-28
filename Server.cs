@@ -15,22 +15,32 @@ public class Server
     {
         Listener = new( System.Net.IPAddress.Any, 11000 );
         Listener.Start();
-        Listener.Server.ReceiveBufferSize = 1024 * 8;
-        Listener.Server.SendBufferSize = 1024 * 20;
 
         while ( true )
         {
-            if ( Listener.Pending() )
+            TcpClient client = Listener.AcceptTcpClient();
+            var stream = client.GetStream();
+            StreamReader reader = new( stream );
+            StreamWriter writer = new( stream );
+            
+            try
             {
-                Console.WriteLine( "Processing request!" );
-                Socket request = Listener.AcceptSocket();
-
-                Span<byte> buffer = new();
-                var stream = new NetworkStream( request );
-                stream.Read( buffer );
-
-                string data = Encoding.UTF8.GetString( buffer );
-                Console.WriteLine( $"data: {data}" );
+                byte[] buffer = new byte[ 1024 ];
+                stream.Read( buffer, 0, buffer.Length );
+                int recv = 0;
+                foreach ( byte b in buffer )
+                {
+                    if ( b != 0 )
+                        recv++;
+                }
+                string request = Encoding.UTF8.GetString( buffer, 0, recv );
+                Console.WriteLine( request );
+                writer.WriteLine( "Sup bro!" );
+                writer.Flush();
+            }
+            catch ( Exception ex ) 
+            {
+                Console.WriteLine( ex.Message );
             }
         }
     }
