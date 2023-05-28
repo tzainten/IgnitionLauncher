@@ -16,7 +16,7 @@ public class Client
     connection:
         try
         {
-            TcpClient client = new( "192.168.1.123", 11000 );
+            TcpClient client = new( "192.168.1.246", 11000 );
             string message = "Hello World!";
 
             int byteCount = Encoding.ASCII.GetByteCount( message + 1 );
