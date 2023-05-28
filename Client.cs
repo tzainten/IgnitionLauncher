@@ -17,5 +17,7 @@ public class Client
 
         var stream = Tcp.GetStream();
         stream.Write( Encoding.UTF8.GetBytes( "Hello Server!" ) );
+
+        Console.ReadLine();
     }
 }
