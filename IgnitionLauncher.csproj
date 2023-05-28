@@ -5,6 +5,15 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Configurations>Debug;Release;DebugClient;DebugServer</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugClient|AnyCPU'">
+    <DefineConstants>$(DefineConstants);CLIENT</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugServer|AnyCPU'">
+    <DefineConstants>$(DefineConstants);SERVER</DefineConstants>
   </PropertyGroup>
 
 </Project>

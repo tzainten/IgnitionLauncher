@@ -3,16 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IgnitionLauncher", "IgnitionLauncher.csproj", "{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IgnitionLauncher", "IgnitionLauncher.csproj", "{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		DebugClient|Any CPU = DebugClient|Any CPU
+		DebugServer|Any CPU = DebugServer|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.DebugClient|Any CPU.ActiveCfg = DebugClient|Any CPU
+		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.DebugClient|Any CPU.Build.0 = DebugClient|Any CPU
+		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.DebugServer|Any CPU.ActiveCfg = DebugServer|Any CPU
+		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.DebugServer|Any CPU.Build.0 = DebugServer|Any CPU
 		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{80FE0EC9-B078-4D6F-99C5-44CDE490D07C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
