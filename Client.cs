@@ -14,5 +14,8 @@ public class Client
     public Client()
     {
         Tcp = new TcpClient( "192.168.1.246", 11000 );
+
+        var stream = Tcp.GetStream();
+        stream.Write( Encoding.UTF8.GetBytes( "Hello Server!" ) );
     }
 }
