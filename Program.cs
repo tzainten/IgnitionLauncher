@@ -26,25 +26,6 @@ public class Program
 
     static ConcurrentDictionary<string, string> FileMetadata = new();
 
-    public static void CreateAllFoldersForPath( string path )
-    {
-        int i = 0;
-        string folderPath = string.Empty;
-        var folders = path.Split( Path.DirectorySeparatorChar );
-        foreach ( string folder in folders )
-        {
-            if ( i == 0 )
-                folderPath += folder;
-            else
-                folderPath += $"{Path.DirectorySeparatorChar}{folder}";
-
-            if ( !Directory.Exists( folderPath ) )
-                Directory.CreateDirectory( folderPath );
-
-            i++;
-        }
-    }
-
     public static void Main( string[] args )
     {
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -97,7 +78,6 @@ public class Program
 
                 socket.Close( true );
 
-                CreateAllFoldersForPath( $"{ClientContentRoot}\\{path}" );
                 File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
             }
         }
@@ -155,7 +135,6 @@ public class Program
                         path += item;
                     }
 
-                    CreateAllFoldersForPath( $"{ClientContentRoot}\\{path}" );
                     File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
                     socket.Close( true );
                 }
