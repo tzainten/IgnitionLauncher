@@ -16,6 +16,10 @@ public enum PacketType : int
     RequestDownloadFile,
     FileMismatched,
     DoneComparingFileHashes,
+    AckFolder,
+    DoneAckingFolders,
+    NotifyOfMissingFolders,
     NotifyOfMissingFiles,
-    RequestMissingFile
+    RequestMissingFile,
+    RequestMissingFolder
 }

@@ -79,6 +79,22 @@ public class Server
                             socket.Write( Encoding.UTF8.GetBytes( fileName.Replace( $"{PackagedContentRoot}\\", string.Empty ) + "@" ).Concat( file ).ToArray() );
                             break;
                         }
+                    case PacketType.AckFolder:
+                        {
+                            string folderPath = Encoding.UTF8.GetString( metadata.Data );
+                            AckFolders.Remove( folderPath );
+
+                            break;
+                        }
+                    case PacketType.DoneAckingFolders:
+                        {
+                            if ( AckFolders.Count > 0 )
+                                socket.Write( BitConverter.GetBytes( AckFolders.Count ), PacketType.NotifyOfMissingFolders );
+                            else
+                                socket.Write( new byte[ 1 ] );
+
+                            break;
+                        }
                     case PacketType.CompareFileHash:
                         {
                             var filePath = Encoding.UTF8.GetString( metadata.Data );
@@ -135,6 +151,18 @@ public class Server
                                 var path = item.Key + "@";
 
                                 socket.Write( Encoding.UTF8.GetBytes( path ).Concat( file ).ToArray() );
+
+                                break;
+                            }
+                            break;
+                        }
+                    case PacketType.RequestMissingFolder:
+                        {
+                            foreach ( var item in AckFolders )
+                            {
+                                AckFolders.Remove( item.Key );
+
+                                socket.Write( Encoding.UTF8.GetBytes( item.Key ) );
 
                                 break;
                             }

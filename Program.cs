@@ -36,6 +36,7 @@ public class Program
         IgnitionSocket socket = new( "127.0.0.1", 11000 );
 
         string[] files = Directory.GetFiles( ClientContentRoot, "*", SearchOption.AllDirectories );
+        string[] folders = Directory.GetDirectories( ClientContentRoot, "*", SearchOption.AllDirectories );
 
         if ( files.Length == 0 )
         {
@@ -90,6 +91,35 @@ public class Program
             } );
 
             PacketMetadata metadata;
+            for ( int i = 0; i < folders.Length; i++ )
+            {
+                string folder = folders[ i ];
+
+                byte[] folderPath = Encoding.UTF8.GetBytes( folder.Replace( $"{ClientContentRoot}\\", string.Empty ) );
+                socket.Write( folderPath, PacketType.AckFolder );
+                socket.Close( true );
+            }
+
+            socket.Write( new byte[ 1 ], PacketType.DoneAckingFolders );
+
+            metadata = socket.Read();
+            socket.Close( true );
+
+            if ( metadata.Type == PacketType.NotifyOfMissingFolders )
+            {
+                int missingFolderCount = BitConverter.ToInt32( metadata.Data );
+                for ( int i = 0; i < missingFolderCount; i++ )
+                {
+                    socket.Write( new byte[ 1 ], PacketType.RequestMissingFolder );
+
+                    metadata = socket.Read();
+                    var folderPath = $"{ClientContentRoot}\\{Encoding.UTF8.GetString( metadata.Data )}";
+
+                    if ( Directory.Exists( folderPath ) ) continue;
+                    Directory.CreateDirectory( folderPath );
+                }
+            }
+
             for ( int i = 0; i < files.Length; i++ )
             {
                 string item = files[ i ];
