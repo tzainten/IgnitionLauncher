@@ -31,24 +31,24 @@ public static class BuildHandler
     {
         FolderContentsDiffInfo result = new();
 
-        foreach ( string folder in Directory.GetDirectories( localPath, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetDirectories( localPath, "*", SearchOption.AllDirectories ), ( string folder ) =>
         {
             if ( !Directory.Exists( folder.Replace( localPath, comparePath ) ) )
-                result.RemovedDirectories.Add( folder );
-        }
+                result.RemovedDirectories.TryAdd( folder, true );
+        } );
 
-        foreach ( string folder in Directory.GetDirectories( comparePath, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetDirectories( comparePath, "*", SearchOption.AllDirectories ), ( string folder ) =>
         {
             if ( !Directory.Exists( folder.Replace( comparePath, localPath ) ) )
-                result.AddedDirectories.Add( folder );
-        }
+                result.AddedDirectories.TryAdd( folder, true );
+        } );
 
-        foreach ( string file in Directory.GetFiles( localPath, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetFiles( localPath, "*", SearchOption.AllDirectories ), ( string file ) =>
         {
             if ( !File.Exists( file.Replace( localPath, comparePath ) ) )
             {
-                result.RemovedFiles.Add( file );
-                continue;
+                result.RemovedFiles.TryAdd( file, true );
+                return;
             }
 
             var localFile = File.ReadAllBytes( file );
@@ -59,17 +59,14 @@ public static class BuildHandler
             var comparemd5 = GetMD5String( GetMD5Hash( compareFile ) );
 
             if ( mymd5 != comparemd5 )
-                result.ChangedFiles.Add( file.Replace( localPath, string.Empty ) );
-        }
+                result.ChangedFiles.TryAdd( file.Replace( localPath, string.Empty ), true );
+        } );
 
-        foreach ( string file in Directory.GetFiles( comparePath, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetFiles( comparePath, "*", SearchOption.AllDirectories ), ( string file ) =>
         {
             if ( !File.Exists( file.Replace( comparePath, localPath ) ) )
-            {
-                result.AddedFiles.Add( file );
-                continue;
-            }
-        }
+                result.AddedFiles.TryAdd( file, true );
+        } );
 
         if ( result.ChangedFiles.Count > 0 )
             Console.WriteLine( $"Changed {result.ChangedFiles.Count} files" );
@@ -98,23 +95,25 @@ public static class BuildHandler
         }
     }
 
-    public static void ConstructBuild( int buildId = 0, List<string>? ignoredFiles = null, List<string>? ignoredDirectories = null )
+    public static void ConstructBuild( int buildId = 0, ConcurrentDictionary<string, bool>? ignoredFiles = null, ConcurrentDictionary<string, bool>? ignoredDirectories = null )
     {
         string path = PackagedContentRoot;
 
         Directory.CreateDirectory( path.Replace( path, $"{BuildRoot}/{buildId}" ) );
 
-        foreach ( string item in Directory.GetDirectories( path, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetDirectories( path, "*", SearchOption.AllDirectories ), ( string item ) =>
         {
-            if ( ignoredDirectories != null && ignoredDirectories.Contains( item ) ) continue;
+            bool value;
+            if ( ignoredDirectories != null && ignoredDirectories.TryGetValue( item, out value ) ) return;
             Directory.CreateDirectory( item.Replace( path, $"{BuildRoot}/{buildId}" ) );
-        }
+        } );
 
-        foreach ( string item in Directory.GetFiles( path, "*", SearchOption.AllDirectories ) )
+        Parallel.ForEach( Directory.GetFiles( path, "*", SearchOption.AllDirectories ), ( string item ) =>
         {
-            if ( ignoredFiles != null && ignoredFiles.Contains( item ) ) continue;
+            bool value;
+            if ( ignoredFiles != null && ignoredFiles.TryGetValue( item, out value ) ) return;
             File.Copy( item, item.Replace( path, $"{BuildRoot}/{buildId}" ), true );
-        }
+        } );
 
         if ( Directory.Exists( $"{BuildRoot}/{buildId - 1}" ) )
             Directory.Delete( $"{BuildRoot}/{buildId - 1}", true );
