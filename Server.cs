@@ -50,8 +50,12 @@ public class Server
                 {
                     case PacketType.RequestFullDownload:
                         {
-                            //socket.Write( BitConverter.GetBytes( Directory.GetFiles( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
                             socket.Write( BitConverter.GetBytes( Directory.GetDirectories( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
+                            break;
+                        }
+                    case PacketType.RequestFileCount:
+                        {
+                            socket.Write( BitConverter.GetBytes( Directory.GetFiles( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
                             break;
                         }
                     case PacketType.RequestDownloadFolder:

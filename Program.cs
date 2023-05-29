@@ -68,12 +68,15 @@ public class Program
                 socket.Write( BitConverter.GetBytes( i ), PacketType.RequestDownloadFolder );
 
                 var metadata = socket.Read();
+                socket.Close( true );
 
-                var folderName = Encoding.UTF8.GetString( metadata.Data );
+                var folderName = $"{ClientContentRoot}\\{Encoding.UTF8.GetString( metadata.Data )}";
                 if ( Directory.Exists( folderName ) ) continue;
 
                 Directory.CreateDirectory( folderName );
             }
+
+            socket.Write( new byte[ 1 ], PacketType.RequestFileCount );
 
             int fileCount = BitConverter.ToInt32( socket.Read().Data );
             socket.Close( true );
