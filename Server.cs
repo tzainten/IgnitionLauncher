@@ -15,6 +15,7 @@ public class Server
 
     static List<string> Files = new();
     static Dictionary<string, string> FileHashes = new();
+    static Dictionary<string, bool> AckFiles = new();
 
     public Server()
     {
@@ -25,6 +26,7 @@ public class Server
         {
             Files.Add( item );
             FileHashes.Add( item.Replace( $"{PackagedContentRoot}\\", string.Empty ), BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( File.ReadAllBytes( item ) ) ) );
+            AckFiles.Add( item.Replace( $"{PackagedContentRoot}\\", string.Empty ), true );
         }
 
         while ( true )
@@ -62,19 +64,54 @@ public class Server
                                 path += item;
                             }
 
-                            var fileHash = Encoding.UTF8.GetString( metadata.Data.Skip( path.Length + 1 ).ToArray() );
-                            if ( fileHash != FileHashes[ path ] )
+                            string localHash = string.Empty;
+                            if ( FileHashes.TryGetValue( path, out localHash ) )
                             {
-                                Console.WriteLine( $"Mismatch detected for {path}!" );
+                                AckFiles.Remove( path );
 
-                                var file = File.ReadAllBytes( $"{PackagedContentRoot}/{path}" );
+                                var fileHash = Encoding.UTF8.GetString( metadata.Data.Skip( path.Length + 1 ).ToArray() );
+                                if ( fileHash != localHash )
+                                {
+                                    Console.WriteLine( $"Mismatch detected for {path}!" );
 
-                                socket.Write( file, PacketType.FileMismatched );
-                                Console.WriteLine( file.Length );
+                                    var file = File.ReadAllBytes( $"{PackagedContentRoot}/{path}" );
+
+                                    socket.Write( file, PacketType.FileMismatched );
+                                    Console.WriteLine( file.Length );
+                                }
+                                else
+                                    socket.Write( new byte[ 1 ] );
                             }
                             else
                                 socket.Write( new byte[ 1 ] );
 
+                            break;
+                        }
+                    case PacketType.DoneComparingFileHashes:
+                        {
+                            if ( AckFiles.Count > 0 )
+                            {
+                                Console.WriteLine( "Client is missing files!" );
+
+                                socket.Write( BitConverter.GetBytes( AckFiles.Count ), PacketType.NotifyOfMissingFiles );
+                            }
+                            else
+                                socket.Write( new byte[ 1 ] );
+                            break;
+                        }
+                    case PacketType.RequestMissingFile:
+                        {
+                            foreach ( var item in AckFiles )
+                            {
+                                AckFiles.Remove( item.Key );
+
+                                var file = File.ReadAllBytes( $"{PackagedContentRoot}/{item.Key}" );
+                                var path = item.Key + "@";
+
+                                socket.Write( Encoding.UTF8.GetBytes( path ).Concat( file ).ToArray() );
+
+                                break;
+                            }
                             break;
                         }
                 }

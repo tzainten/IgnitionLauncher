@@ -62,8 +62,6 @@ public class Program
 
                 socket.Close( true );
 
-                Console.WriteLine( metadata.Data.Skip( path.Length + 1 ).ToArray().Length );
-
                 File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
             }
         }
@@ -75,6 +73,7 @@ public class Program
                 FileMetadata.TryAdd( item.Replace( $"{ClientContentRoot}\\", string.Empty ), BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( file ) ) );
             } );
 
+            PacketMetadata metadata;
             for ( int i = 0; i < files.Length; i++ )
             {
                 string item = files[ i ];
@@ -88,16 +87,44 @@ public class Program
 
                 socket.Write( filePath.Concat( fileHash ).ToArray(), PacketType.CompareFileHash );
 
-                PacketMetadata metadata = socket.Read();
+                metadata = socket.Read();
                 if ( metadata.Type == PacketType.FileMismatched )
                 {
                     File.WriteAllBytes( item, metadata.Data );
                     Console.WriteLine( metadata.Data.Length );
                 }
 
-
                 socket.Close( true );
             }
+
+            socket.Write( new byte[ 1 ], PacketType.DoneComparingFileHashes );
+
+            metadata = socket.Read();
+            socket.Close( true );
+
+            if ( metadata.Type == PacketType.NotifyOfMissingFiles )
+            {
+                int missingFileCount = BitConverter.ToInt32( metadata.Data );
+                for ( int i = 0; i < missingFileCount; i++ )
+                {
+                    socket.Write( new byte[ 1 ], PacketType.RequestMissingFile );
+
+                    metadata = socket.Read();
+                    var filePath = Encoding.UTF8.GetString( metadata.Data );
+
+                    string path = string.Empty;
+                    foreach ( char item in filePath )
+                    {
+                        if ( item == '@' ) break;
+                        path += item;
+                    }
+
+                    File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
+                    socket.Close( true );
+                }
+            }
+
+            socket.Close();
         }
 #else
         Server = new();
