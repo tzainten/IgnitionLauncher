@@ -60,10 +60,23 @@ public class Program
         {
             socket.Write( new byte[ 1 ], PacketType.RequestFullDownload );
 
-            int fileCount = BitConverter.ToInt32( socket.Read().Data );
+            int folderCount = BitConverter.ToInt32( socket.Read().Data );
             socket.Close( true );
 
-            Console.WriteLine( fileCount );
+            for ( int i = 0; i < folderCount; i++ )
+            {
+                socket.Write( BitConverter.GetBytes( i ), PacketType.RequestDownloadFolder );
+
+                var metadata = socket.Read();
+
+                var folderName = Encoding.UTF8.GetString( metadata.Data );
+                if ( Directory.Exists( folderName ) ) continue;
+
+                Directory.CreateDirectory( folderName );
+            }
+
+            int fileCount = BitConverter.ToInt32( socket.Read().Data );
+            socket.Close( true );
 
             for ( int i = 0; i < fileCount; i++ )
             {

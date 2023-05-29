@@ -17,6 +17,9 @@ public class Server
     static Dictionary<string, string> FileHashes = new();
     static Dictionary<string, bool> AckFiles = new();
 
+    static List<string> Folders = new();
+    static Dictionary<string, bool> AckFolders = new();
+
     public Server()
     {
         Listener = new( System.Net.IPAddress.Any, 11000 );
@@ -27,6 +30,12 @@ public class Server
             Files.Add( item );
             FileHashes.Add( item.Replace( $"{PackagedContentRoot}\\", string.Empty ), BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( File.ReadAllBytes( item ) ) ) );
             AckFiles.Add( item.Replace( $"{PackagedContentRoot}\\", string.Empty ), true );
+        }
+
+        foreach ( var item in Directory.GetDirectories( PackagedContentRoot, "*", SearchOption.AllDirectories ) )
+        {
+            Folders.Add( item );
+            AckFolders.Add( item.Replace( $"{PackagedContentRoot}\\", string.Empty ), true );
         }
 
         while ( true )
@@ -40,9 +49,20 @@ public class Server
                 switch ( metadata.Type )
                 {
                     case PacketType.RequestFullDownload:
-                        socket.Write( BitConverter.GetBytes( Directory.GetFiles( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
-                        break;
+                        {
+                            //socket.Write( BitConverter.GetBytes( Directory.GetFiles( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
+                            socket.Write( BitConverter.GetBytes( Directory.GetDirectories( PackagedContentRoot, "*", SearchOption.AllDirectories ).Length ) );
+                            break;
+                        }
+                    case PacketType.RequestDownloadFolder:
+                        {
+                            int index = BitConverter.ToInt32( metadata.Data );
 
+                            var folderName = Folders[ index ];
+                            socket.Write( Encoding.UTF8.GetBytes( folderName.Replace( $"{PackagedContentRoot}\\", string.Empty ) ) );
+
+                            break;
+                        }
                     case PacketType.RequestDownloadFile:
                         {
                             int index = BitConverter.ToInt32( metadata.Data );

@@ -11,6 +11,7 @@ public enum PacketType : int
     None,
     CompareFileHash,
     RequestFullDownload,
+    RequestDownloadFolder,
     RequestDownloadFile,
     FileMismatched,
     DoneComparingFileHashes,
