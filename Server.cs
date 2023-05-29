@@ -72,6 +72,8 @@ public class Server
                             int index = BitConverter.ToInt32( metadata.Data );
 
                             var fileName = Files[ index ];
+                            Console.WriteLine( fileName );
+
                             var file = File.ReadAllBytes( fileName );
 
                             socket.Write( Encoding.UTF8.GetBytes( fileName.Replace( $"{PackagedContentRoot}\\", string.Empty ) + "@" ).Concat( file ).ToArray() );
