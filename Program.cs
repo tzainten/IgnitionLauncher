@@ -16,15 +16,34 @@ public class Program
     static Client? Client;
     static Server? Server;
 
-    static string PackagedContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
+    //public static string PackagedContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
     //static string ClientContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\ClientContent";
-    //static string PackagedContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/Rogue";
-    static string ClientContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/TestApp";
+    public static string PackagedContentRoot => @$"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}\Rogue";
+    public static string ClientContentRoot => @$"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}\TestApp";
 
     static List<string> Folders = new();
     static List<string> Files = new();
 
     static ConcurrentDictionary<string, string> FileMetadata = new();
+
+    public static void CreateAllFoldersForPath( string path )
+    {
+        int i = 0;
+        string folderPath = string.Empty;
+        var folders = path.Split( Path.DirectorySeparatorChar );
+        foreach ( string folder in folders )
+        {
+            if ( i == 0 )
+                folderPath += folder;
+            else
+                folderPath += $"{Path.DirectorySeparatorChar}{folder}";
+
+            if ( !Directory.Exists( folderPath ) )
+                Directory.CreateDirectory( folderPath );
+
+            i++;
+        }
+    }
 
     public static void Main( string[] args )
     {
@@ -62,6 +81,7 @@ public class Program
 
                 socket.Close( true );
 
+                CreateAllFoldersForPath( $"{ClientContentRoot}\\{path}" );
                 File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
             }
         }
@@ -119,6 +139,7 @@ public class Program
                         path += item;
                     }
 
+                    CreateAllFoldersForPath( $"{ClientContentRoot}\\{path}" );
                     File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
                     socket.Close( true );
                 }

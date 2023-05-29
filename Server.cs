@@ -11,7 +11,7 @@ public class Server
 {
     static TcpListener Listener { get; set; }
 
-    static string PackagedContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
+    static string PackagedContentRoot => Program.PackagedContentRoot;
 
     static List<string> Files = new();
     static Dictionary<string, string> FileHashes = new();
