@@ -9,35 +9,17 @@ namespace IgnitionLauncher;
 
 public class Client
 {
-    static TcpClient Tcp { get; set; }
+    private string _hostname;
+    private int _port;
 
-    public Client()
+    public Client( string hostname, int port )
     {
-    connection:
-        try
-        {
-            TcpClient client = new( "192.168.1.246", 11000 );
-            string message = "Hello World!";
+        _hostname = hostname;
+        _port = port;
 
-            int byteCount = Encoding.ASCII.GetByteCount( message + 1 );
-            byte[] sendData = new byte[ byteCount ];
-            sendData = Encoding.ASCII.GetBytes( message );
+        IgnitionSocket socket = new( hostname, port );
 
-            NetworkStream stream = client.GetStream();
-            stream.Write( sendData, 0, sendData.Length );
-
-            StreamReader reader = new( stream );
-            string response = reader.ReadLine();
-            Console.WriteLine( response );
-
-            stream.Close();
-            client.Close();
-            Console.ReadKey();
-        }
-        catch ( Exception ex )
-        {
-            Console.WriteLine( "Failed to connect, retrying..." );
-            goto connection;
-        }
+        Console.WriteLine( Encoding.UTF8.GetString( socket.Read().Data ) );
+        socket.Close();
     }
 }

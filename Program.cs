@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -15,126 +16,93 @@ public class Program
     static Client? Client;
     static Server? Server;
 
-    //static string PackagedContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
+    static string PackagedContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
     //static string ClientContentRoot => $"C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\ClientContent";
-    static string PackagedContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/Rogue";
-    static string ClientContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/Rogue";
+    //static string PackagedContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/Rogue";
+    static string ClientContentRoot => $"{Environment.GetFolderPath( Environment.SpecialFolder.Desktop )}/TestApp";
+
+    static List<string> Folders = new();
+    static List<string> Files = new();
+
+    static ConcurrentDictionary<string, string> FileMetadata = new();
 
     public static void Main( string[] args )
     {
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-        string type = string.Empty;
+#if CLIENT
+        //Client = new( "127.0.0.1", 11000 );
 
-        if ( ( type = Console.ReadLine() ) == "1" )
+        IgnitionSocket socket = new( "127.0.0.1", 11000 );
+
+        string[] files = Directory.GetFiles( ClientContentRoot, "*", SearchOption.AllDirectories );
+
+        if ( files.Length == 0 )
         {
-            TcpListener listener = new( IPAddress.Any, 11000 );
-            listener.Start();
+            socket.Write( new byte[ 1 ], PacketType.RequestFullDownload );
 
-            TcpClient client;
-            while ( true )
+            int fileCount = BitConverter.ToInt32( socket.Read().Data );
+            socket.Close( true );
+
+            Console.WriteLine( fileCount );
+
+            for ( int i = 0; i < fileCount; i++ )
             {
-                client = null;
+                socket.Write( BitConverter.GetBytes( i ), PacketType.RequestDownloadFile );
 
-                try
+                var metadata = socket.Read();
+                var filePath = Encoding.UTF8.GetString( metadata.Data );
+
+                string path = string.Empty;
+                foreach ( char item in filePath )
                 {
-                    client = listener.AcceptTcpClient();
-                    var stream = client.GetStream();
-
-                    byte[] buffer = new byte[ client.ReceiveBufferSize ];
-
-                    int byteCount = stream.Read( buffer, 0, buffer.Length );
-
-                    var readableData = Encoding.UTF8.GetString( buffer, 0, byteCount ).Split( "@" );
-
-                    foreach ( var item in Directory.GetFiles( PackagedContentRoot, "*", SearchOption.AllDirectories ) )
-                    {
-                        if ( !item.Contains( readableData[ 0 ] ) ) continue;
-
-                        var file = File.ReadAllBytes( item );
-                        var filemd5 = BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( file ) );
-
-                        if ( filemd5 != readableData[ 1 ] )
-                        {
-                            byte[] fileName = Encoding.UTF8.GetBytes( $"{item.Replace( $"{PackagedContentRoot}\\", string.Empty )}@" );
-                            byte[] combinedData = fileName.Concat( file ).ToArray();
-
-                            stream.Write( combinedData, 0, file.Length );
-                            break;
-                        }
-                    }
-
-                    stream.Close();
-                    client.Close();
-
-                    Console.WriteLine( $"data: {readableData[ 0 ]}, {readableData[ 1 ]}" );
+                    if ( item == '@' ) break;
+                    path += item;
                 }
-                catch ( Exception ex ) { }
+
+                socket.Close( true );
+
+                Console.WriteLine( metadata.Data.Skip( path.Length + 1 ).ToArray().Length );
+
+                File.WriteAllBytes( $"{ClientContentRoot}/{path}", metadata.Data.Skip( path.Length + 1 ).ToArray() );
             }
         }
         else
         {
-            foreach ( var item in Directory.GetFiles( ClientContentRoot, "*", SearchOption.AllDirectories ) )
+            Parallel.ForEach( files, ( string item ) =>
             {
                 var file = File.ReadAllBytes( item );
-                var filemd5 = BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( file ) );
+                FileMetadata.TryAdd( item.Replace( $"{ClientContentRoot}\\", string.Empty ), BuildHandler.GetMD5String( BuildHandler.GetMD5Hash( file ) ) );
+            } );
 
-                try
+            for ( int i = 0; i < files.Length; i++ )
+            {
+                string item = files[ i ];
+
+                string hash;
+                if ( !FileMetadata.TryGetValue( item.Replace( $"{ClientContentRoot}\\", string.Empty ), out hash ) )
+                    throw new Exception( "Failed to get a hash!" );
+
+                byte[] filePath = Encoding.UTF8.GetBytes( ( item + "@" ).Replace( $"{ClientContentRoot}\\", string.Empty ) );
+                byte[] fileHash = Encoding.UTF8.GetBytes( hash );
+
+                socket.Write( filePath.Concat( fileHash ).ToArray(), PacketType.CompareFileHash );
+
+                PacketMetadata metadata = socket.Read();
+                if ( metadata.Type == PacketType.FileMismatched )
                 {
-                    TcpClient client = new();
-                    client.Connect( "192.168.1.246", 11000 );
-
-                    var stream = client.GetStream();
-
-                    byte[] data = Encoding.UTF8.GetBytes( $"{item.Replace( $"{ClientContentRoot}\\", string.Empty )}@{filemd5}" );
-
-                    stream.Write( data, 0, data.Length );
-
-                    byte[] buffer = new byte[ client.ReceiveBufferSize ];
-                    int byteCount = stream.Read( buffer, 0, buffer.Length );
-                    if ( byteCount <= 0 ) continue;
-
-                    var dataAsString = Encoding.UTF8.GetString( buffer, 0, byteCount );
-
-                    int splitIndex = 0;
-                    string fileName = string.Empty;
-                    for ( int i = 0; i < dataAsString.Length; i++ )
-                    {
-                        splitIndex++;
-
-                        char c = dataAsString[ i ];
-                        if ( c == '@' ) break;
-
-                        fileName += dataAsString[ i ];
-                    }
-
-                    byte[] dataWithoutFileName = buffer.Skip( splitIndex ).ToArray();
-
-                    File.WriteAllBytes( $"{ClientContentRoot}/{fileName}", dataWithoutFileName );
-
-                    //Console.WriteLine( fileName );
-
-                    //Console.WriteLine( $"data: {Encoding.UTF8.GetString( buffer, 0, byteCount )}" );
-
-                    client.Close();
+                    File.WriteAllBytes( item, metadata.Data );
+                    Console.WriteLine( metadata.Data.Length );
                 }
-                catch ( Exception ex )
-                {
-                    Console.WriteLine( ex.Message );
-                }
+
+
+                socket.Close( true );
             }
-
-            Console.ReadKey();
         }
+#else
+        Server = new();
+#endif
 
-        /*BuildHandler.DetermineMostRecentBuild();
-
-        if ( BuildHandler.MostRecentBuildId != -1 )
-            BuildHandler.CheckForDiffsAgainstPackagedContent( BuildHandler.MostRecentBuildId );
-        else
-        {
-            Directory.CreateDirectory( $"{BuildHandler.BuildRoot}/0" );
-            BuildHandler.ConstructBuild();
-        }*/
+        Console.ReadKey();
     }
 }

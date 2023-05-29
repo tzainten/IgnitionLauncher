@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -10,10 +11,10 @@ namespace IgnitionLauncher;
 public static class BuildHandler
 {
     public static string BuildRoot => "C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\IgnitionLauncher\\builds";
-    /*public static string PackagedContentRoot => "C:\\Users\\Jaiden\\Desktop\\Rogue";
-    public static string ClientContentRoot => "C:\\Users\\Jaiden\\Desktop\\RogueClient";*/
-    public static string PackagedContentRoot => "C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
-    public static string ClientContentRoot => "C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\ClientContent";
+    public static string PackagedContentRoot => "C:\\Users\\Jaiden\\Desktop\\Rogue";
+    public static string ClientContentRoot => "C:\\Users\\Jaiden\\Desktop\\RogueClient";
+    /*public static string PackagedContentRoot => "C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\bin\\Debug\\net7.0";
+    public static string ClientContentRoot => "C:\\Users\\Jaiden\\Documents\\Visual Studio 2022 Projects\\TestAppForLauncher\\ClientContent";*/
 
     public static string MostRecentBuildRoot => $"{BuildRoot}/{MostRecentBuildId}";
 
@@ -52,7 +53,6 @@ public static class BuildHandler
             }
 
             var localFile = File.ReadAllBytes( file );
-            Console.WriteLine( $"{localFile.Length} bytes" );
             var mymd5 = GetMD5String( GetMD5Hash( localFile ) );
 
             var compareFile = File.ReadAllBytes( file.Replace( localPath, comparePath ) );
